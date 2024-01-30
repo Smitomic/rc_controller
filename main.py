@@ -1,9 +1,11 @@
 import os
 import time
 import pygame
-import picamera
-import io
-import motor_control_functions
+from picamera2 import Picamera2, Preview
+import sys
+import PiMotor
+
+resolution = (1080, 720)
 
 
 def initialize_screen():
@@ -11,76 +13,97 @@ def initialize_screen():
     pygame.init()
 
     # Set up the Pygame window
-    screen_width, screen_height = 640, 480
-    screen = pygame.display.set_mode((screen_width, screen_height))
+    screen = pygame.display.set_mode(resolution)
     pygame.display.set_caption("RC Car Control")
 
     # Set up PiCamera
-    camera = picamera.PiCamera()
-    camera.resolution = (screen_width, screen_height)
-    camera.framerate = 30
-    stream = io.BytesIO()
+    camera = Picamera2()
+    camera.preview_configuration.main.size = resolution
+    camera.preview_configuration.main.format = 'BGR888'
+    camera.configure("preview")
+    camera.start()
 
-    return screen, camera, stream
+    return screen, camera
 
 
-def run_controller(screen, camera, stream):
+def run_controller(screen, camera):
+    # Control individual motors
+    m1 = PiMotor.Motor("MOTOR1", 1)
+    m2 = PiMotor.Motor("MOTOR2", 1)
+    # Control both motors
+    motorAll = PiMotor.LinkedMotors(m1, m2)
+
     # Define a directory to save images
     image_dir = os.path.join(os.path.dirname(__file__), "captured_images")
     os.makedirs(image_dir, exist_ok=True)
 
+    # Setting time clock for the game framerate
+    clock = pygame.time.Clock()
+
     # Main game loop
     while True:
-        # Handle events
+        # Setting camera preview screen in pygame window
+        array = camera.capture_array()
+        img = pygame.image.frombuffer(array.data, resolution, 'RGB')
+        screen.blit(img, (0, 0))
+        pygame.display.update()
+
+        start_capture = False
+        control_logger = 'stop'
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                break
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                # After first input for moving, start capturing images
+                start_capture = True
 
-        # Get the camera stream
-        camera.capture(stream, format='jpeg')
-        stream.seek(0)
-        background = pygame.image.load(stream)
-        screen.blit(background, (0, 0))
-
-        # Update car control
-        keys = pygame.key.get_pressed()
-        # Define a dictionary mapping keys to functions
-        key_actions = {
-            pygame.K_w: motor_control_functions.accelerate(),
-            pygame.K_s: motor_control_functions.reverse(),
-            pygame.K_a: motor_control_functions.left_turn(),
-            pygame.K_d: motor_control_functions.right_turn(),
-            pygame.K_q: motor_control_functions.left_in_place_turn(),
-            pygame.K_e: motor_control_functions.right_in_place_turn(),
-        }
-
-        # Default action is stop
-        default_action = motor_control_functions.stop()
-
-        # Check if any of the keys are pressed, and perform the corresponding action
-        for key, action in key_actions.items():
-            if keys[key]:
-                control_logger = action()
-                break
-        else:
-            # If no keys are pressed, perform the default action (stop)
-            control_logger = default_action()
+                # Check for specific keys and perform the corresponding action
+                if event.key == pygame.K_w:
+                    motorAll.forward(100)
+                    control_logger = "accelerate"
+                elif event.key == pygame.K_s:
+                    motorAll.reverse(100)
+                    control_logger = "reverse"
+                elif event.key == pygame.K_a:
+                    m1.forward(50)
+                    m2.forward(100)
+                    control_logger = "leftTurn"
+                elif event.key == pygame.K_d:
+                    m1.forward(100)
+                    m2.forward(50)
+                    control_logger = "rightTurn"
+                elif event.key == pygame.K_q:
+                    m1.forward(50)
+                    m2.reverse(50)
+                    control_logger = "leftInPlaceTurn"
+                elif event.key == pygame.K_e:
+                    m1.reverse(50)
+                    m2.forward(50)
+                    control_logger = "rightInPlaceTurn"
+                elif event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    camera.close()
+                    sys.exit()
+            if event.type == pygame.KEYUP:
+                motorAll.stop()
 
         # Save image with current direction
-        filename = os.path.join(image_dir, f"image_{control_logger}_{str(time.time())}.jpg")
-        pygame.image.save(screen, filename)
+        if start_capture:
+            filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
+            # print(filename)
+            camera.capture_file(filename)
+
+        # Setting specific framerate
+        clock.tick(30)
 
         # Update the Pygame display
         pygame.display.flip()
 
-    # Clean up
-    pygame.quit()
-    camera.close()
-
 
 def main():
-    screen, camera, stream = initialize_screen()
-    run_controller(screen, camera, stream)
+    screen, camera = initialize_screen()
+    run_controller(screen, camera)
 
 
 # Press the green button in the gutter to run the script.
