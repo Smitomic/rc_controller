@@ -18,8 +18,6 @@ def initialize_screen():
 
     # Set up PiCamera
     camera = Picamera2()
-    # Leaving the resolution of a still to be the same as the app window
-    # to have an opportunity to train with higher resolution images
     camera.preview_configuration.main.size = resolution
     camera.preview_configuration.main.format = 'BGR888'
     camera.configure("preview")
@@ -97,9 +95,7 @@ def run_controller(screen, camera):
             camera.capture_file(filename)
 
         # Setting specific framerate
-        # Choosing 10 fps to lower the amount of data while capturing significant amount of changes
-        # but lower fps decreases the responsiveness of controls of the car
-        clock.tick(10)
+        clock.tick(30)
 
         # Update the Pygame display
         pygame.display.flip()
