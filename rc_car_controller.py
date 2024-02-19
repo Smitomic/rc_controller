@@ -28,13 +28,19 @@ def render_text(screen, font, text, position):
     screen.blit(rendered_text, position)
 
 
-def manual_mode_control(motorAll, m1, m2):
+def manual_mode_control(motorAll, m1, m2, manual_mode):
     control_logger = 'stop'
     capture_enabled = False
 
     for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_m:
+                manual_mode = not manual_mode
+                print("Manual Mode" if manual_mode else "Self-Driving Mode")
+            elif event.key == pygame.K_w:
                 motorAll.forward(100)
                 control_logger = "accelerate"
             elif event.key == pygame.K_s:
@@ -65,31 +71,40 @@ def manual_mode_control(motorAll, m1, m2):
         elif event.type == pygame.KEYUP:
             motorAll.stop()
 
-    return control_logger, capture_enabled
+    return control_logger, capture_enabled, manual_mode
 
 
-def self_driving_mode_control(model, img, motorAll, m1, m2):
-    direction = model(img)
+def self_driving_mode_control(model, img, motorAll, m1, m2, manual_mode):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_m:
+                manual_mode = not manual_mode
+                print("Manual Mode" if manual_mode else "Self-Driving Mode")
+                return manual_mode
+        else:
+            direction = model(img)
 
-    if direction == "accelerate":
-        motorAll.forward(100)
-    elif direction == "reverse":
-        motorAll.reverse(100)
-    elif direction == "leftTurn":
-        m1.forward(50)
-        m2.forward(100)
-    elif direction == "rightTurn":
-        m1.forward(100)
-        m2.forward(50)
-    elif direction == "leftInPlaceTurn":
-        m1.forward(50)
-        m2.reverse(50)
-    elif direction == "rightInPlaceTurn":
-        m1.reverse(50)
-        m2.forward(50)
-    else:
-        motorAll.stop()
-    return
+            if direction == "accelerate":
+                motorAll.forward(100)
+            elif direction == "reverse":
+                motorAll.reverse(100)
+            elif direction == "leftTurn":
+                m1.forward(50)
+                m2.forward(100)
+            elif direction == "rightTurn":
+                m1.forward(100)
+                m2.forward(50)
+            elif direction == "leftInPlaceTurn":
+                m1.forward(50)
+                m2.reverse(50)
+            elif direction == "rightInPlaceTurn":
+                m1.reverse(50)
+                m2.forward(50)
+            else:
+                motorAll.stop()
 
 
 def run_controller(screen, camera, model):
@@ -119,22 +134,13 @@ def run_controller(screen, camera, model):
 
         pygame.display.update()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_m:
-                    manual_mode = not manual_mode
-                    print("Manual Mode" if manual_mode else "Self-Driving Mode")
-
         if manual_mode:
-            control_logger, capture_enabled = manual_mode_control(motorAll, m1, m2)
+            control_logger, capture_enabled, manual_mode = manual_mode_control(motorAll, m1, m2, manual_mode)
             if capture_enabled:
                 filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
                 camera.capture_file(filename)
         else:
-            self_driving_mode_control(model, array, motorAll, m1, m2)
+            manual_mode = self_driving_mode_control(model, array, motorAll, m1, m2, manual_mode)
 
         clock.tick(10)
         pygame.display.flip()
