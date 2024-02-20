@@ -28,9 +28,8 @@ def render_text(screen, font, text, position):
     screen.blit(rendered_text, position)
 
 
-def manual_mode_control(motorAll, m1, m2, manual_mode):
+def manual_mode_control(motorAll, m1, m2, manual_mode, capture_enabled):
     control_logger = 'stop'
-    capture_enabled = False
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -119,6 +118,7 @@ def run_controller(screen, camera, model):
     clock = pygame.time.Clock()
 
     manual_mode = True  # Start in manual mode
+    capture_enabled = False
 
     while True:
         array = camera.capture_array()
@@ -130,12 +130,13 @@ def run_controller(screen, camera, model):
         render_text(screen, font, mode_text, (10, 10))
 
         instructions_text = "Press 'M' to switch mode | Press 'C' to toggle capture"
-        render_text(screen, font, instructions_text, (10, resolution[1] - 40))
+        render_text(screen, font, instructions_text, (10, resolution[1] - 70))
 
         pygame.display.update()
 
         if manual_mode:
-            control_logger, capture_enabled, manual_mode = manual_mode_control(motorAll, m1, m2, manual_mode)
+            control_logger, capture_enabled, manual_mode = manual_mode_control(motorAll, m1, m2, manual_mode,
+                                                                               capture_enabled)
             if capture_enabled:
                 filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
                 camera.capture_file(filename)
