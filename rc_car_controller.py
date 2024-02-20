@@ -15,12 +15,21 @@ def initialize_screen():
     pygame.display.set_caption("RC Car Control")
 
     camera = Picamera2()
+
+    # Preview configuration
+    config_preview = camera.create_preview_configuration()
     camera.preview_configuration.main.size = resolution
     camera.preview_configuration.main.format = 'BGR888'
     camera.configure("preview")
+
+    # Still configuration
+    config_still = camera.create_still_configuration()
+    camera.still_configuration.enable_raw()
+    camera.still_configuration.main.size = camera.sensor_resolution
+
     camera.start()
 
-    return screen, camera
+    return screen, camera, config_preview, config_still
 
 
 def render_text(screen, font, text, position):
@@ -106,7 +115,7 @@ def self_driving_mode_control(model, img, motorAll, m1, m2, manual_mode):
                 motorAll.stop()
 
 
-def run_controller(screen, camera, model):
+def run_controller(screen, camera, model, config_preview, config_still):
     m1 = PiMotor.Motor("MOTOR1", 1)
     m2 = PiMotor.Motor("MOTOR2", 1)
     motorAll = PiMotor.LinkedMotors(m1, m2)
@@ -129,6 +138,9 @@ def run_controller(screen, camera, model):
         mode_text = "Manual Mode" if manual_mode else "Self-Driving Mode"
         render_text(screen, font, mode_text, (10, 10))
 
+        capture_text = "Capture Enabled" if capture_enabled else "Capture Disabled"
+        render_text(screen, font, capture_text, (10, 40))
+
         instructions_text = "Press 'M' to switch mode | Press 'C' to toggle capture"
         render_text(screen, font, instructions_text, (10, resolution[1] - 70))
 
@@ -138,8 +150,13 @@ def run_controller(screen, camera, model):
             control_logger, capture_enabled, manual_mode = manual_mode_control(motorAll, m1, m2, manual_mode,
                                                                                capture_enabled)
             if capture_enabled:
+                # Create file path with correct dir name, add current time as unique identification
+                # and add additional associated data
                 filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
-                camera.capture_file(filename)
+                # Switch to still config for capturing the image and capture the frame
+                camera.switch_mode_and_capture_file(config_still, filename)
+                # Switch back to preview config
+                camera.switch_mode(config_preview)
         else:
             manual_mode = self_driving_mode_control(model, array, motorAll, m1, m2, manual_mode)
 
@@ -149,8 +166,8 @@ def run_controller(screen, camera, model):
 
 def main():
     model = tf.saved_model.load('path/to/saved/model')
-    screen, camera = initialize_screen()
-    run_controller(screen, camera, model)
+    screen, camera, config_preview, config_still = initialize_screen()
+    run_controller(screen, camera, model, config_preview, config_still)
 
 
 if __name__ == '__main__':
