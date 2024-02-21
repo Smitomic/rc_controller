@@ -40,44 +40,51 @@ def render_text(screen, font, text, position):
 def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled):
     control_logger = 'stop'
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_m:
-                manual_mode = not manual_mode
-                print("Manual Mode" if manual_mode else "Self-Driving Mode")
-            elif event.key == pygame.K_w:
-                motor_all.forward(100)
-                control_logger = "accelerate"
-            elif event.key == pygame.K_s:
-                motor_all.reverse(100)
-                control_logger = "reverse"
-            elif event.key == pygame.K_a:
-                m1.forward(50)
-                m2.forward(100)
-                control_logger = "leftTurn"
-            elif event.key == pygame.K_d:
-                m1.forward(100)
-                m2.forward(50)
-                control_logger = "rightTurn"
-            elif event.key == pygame.K_q:
-                m1.forward(50)
-                m2.reverse(50)
-                control_logger = "leftInPlaceTurn"
-            elif event.key == pygame.K_e:
-                m1.reverse(50)
-                m2.forward(50)
-                control_logger = "rightInPlaceTurn"
-            elif event.key == pygame.K_c:
-                capture_enabled = not capture_enabled
-                print("Capture Enabled" if capture_enabled else "Capture Disabled")
-            elif event.key == pygame.K_ESCAPE:
-                pygame.quit()
-                sys.exit()
-        elif event.type == pygame.KEYUP:
-            motor_all.stop()
+    # Track the state of keys for better control responsiveness instead of events
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_w]:
+        motor_all.forward(100)
+        control_logger = "accelerate"
+
+    if keys[pygame.K_s]:
+        motor_all.reverse(100)
+        control_logger = "reverse"
+
+    if keys[pygame.K_a]:
+        m1.forward(50)
+        m2.forward(100)
+        control_logger = "leftTurn"
+
+    if keys[pygame.K_d]:
+        m1.forward(100)
+        m2.forward(50)
+        control_logger = "rightTurn"
+
+    if keys[pygame.K_q]:
+        m1.forward(50)
+        m2.reverse(50)
+        control_logger = "leftInPlaceTurn"
+
+    if keys[pygame.K_e]:
+        m1.reverse(50)
+        m2.forward(50)
+        control_logger = "rightInPlaceTurn"
+
+    if not any([keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d]]):
+        motor_all.stop()
+
+    if keys[pygame.K_c]:
+        capture_enabled = not capture_enabled
+        print("Capture Enabled" if capture_enabled else "Capture Disabled")
+
+    if keys[pygame.K_m]:
+        manual_mode = not manual_mode
+        print("Manual Mode" if manual_mode else "Self-Driving Mode")
+
+    if keys[pygame.K_ESCAPE]:
+        pygame.quit()
+        sys.exit()
 
     return control_logger, capture_enabled, manual_mode
 
