@@ -44,22 +44,30 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled):
     keys = pygame.key.get_pressed()
 
     if keys[pygame.K_w]:
-        motor_all.forward(100)
-        control_logger = "accelerate"
+        if keys[pygame.K_a]:
+            m1.forward(50)
+            m2.forward(100)
+            control_logger = "leftTurn"
+        elif keys[pygame.K_d]:
+            m1.forward(100)
+            m2.forward(50)
+            control_logger = "rightTurn"
+        else:
+            motor_all.forward(100)
+            control_logger = "accelerate"
 
     if keys[pygame.K_s]:
-        motor_all.reverse(100)
-        control_logger = "reverse"
-
-    if keys[pygame.K_a]:
-        m1.forward(50)
-        m2.forward(100)
-        control_logger = "leftTurn"
-
-    if keys[pygame.K_d]:
-        m1.forward(100)
-        m2.forward(50)
-        control_logger = "rightTurn"
+        if keys[pygame.K_a]:
+            m1.reverse(50)
+            m2.reverse(100)
+            control_logger = "reverseLeft"
+        elif keys[pygame.K_d]:
+            m1.reverse(100)
+            m2.reverse(50)
+            control_logger = "reverseRight"
+        else:
+            motor_all.reverse(100)
+            control_logger = "reverse"
 
     if keys[pygame.K_q]:
         m1.forward(50)
