@@ -145,6 +145,11 @@ def run_controller(screen, camera, model, config_preview, config_still):
     capture_enabled = False
 
     while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
         array = camera.capture_array()
         img = pygame.image.frombuffer(array.data, resolution, 'RGB')
         screen.blit(img, (0, 0))
