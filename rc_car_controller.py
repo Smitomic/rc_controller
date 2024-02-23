@@ -130,7 +130,7 @@ def self_driving_mode_control(model, img, motor_all, m1, m2, manual_mode):
                 motor_all.stop()
 
 
-def run_controller(screen, camera, model, config_preview, config_still):
+def run_controller(screen, camera, model):
     m1 = PiMotor.Motor("MOTOR1", 1)
     m2 = PiMotor.Motor("MOTOR2", 1)
     motor_all = PiMotor.LinkedMotors(m1, m2)
@@ -173,10 +173,7 @@ def run_controller(screen, camera, model, config_preview, config_still):
                 # Create file path with correct dir name, add current time as unique identification
                 # and add additional associated data
                 filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
-                # Switch to still config for capturing the image and capture the frame
-                camera.switch_mode_and_capture_file(config_still, filename)
-                # Switch back to preview config
-                camera.switch_mode(config_preview)
+                camera.capture_file(filename)
         else:
             manual_mode = self_driving_mode_control(model, array, motor_all, m1, m2, manual_mode)
 
@@ -187,7 +184,7 @@ def run_controller(screen, camera, model, config_preview, config_still):
 def main():
     model = tf.saved_model.load('path/to/saved/model')
     screen, camera, config_preview, config_still = initialize_screen()
-    run_controller(screen, camera, model, config_preview, config_still)
+    run_controller(screen, camera, model)
 
 
 if __name__ == '__main__':
