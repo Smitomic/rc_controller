@@ -6,7 +6,9 @@ import sys
 import PiMotor
 import tensorflow as tf
 
-resolution = (1080, 720)
+resolution = (640, 480)
+speed = 60
+halfspeed = 30
 
 
 def initialize_screen():
@@ -16,20 +18,16 @@ def initialize_screen():
 
     camera = Picamera2()
 
-    # Preview configuration
-    config_preview = camera.create_preview_configuration()
-    camera.preview_configuration.main.size = resolution
-    camera.preview_configuration.main.format = 'BGR888'
-    camera.configure("preview")
-
     # Still configuration
-    config_still = camera.create_still_configuration()
-    camera.still_configuration.enable_raw()
-    camera.still_configuration.main.size = camera.sensor_resolution
+    config_still = camera.create_still_configuration(main={"size": camera.sensor_resolution},
+                                                     lores={"size": (640, 480)},
+                                                     display="lores")
+    camera.configure(config_still)
 
+    camera.start_preview(Preview.QTGL)
     camera.start()
 
-    return screen, camera, config_preview, config_still
+    return screen, camera
 
 
 def render_text(screen, font, text, position):
@@ -37,7 +35,7 @@ def render_text(screen, font, text, position):
     screen.blit(rendered_text, position)
 
 
-def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled):
+def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled, camera):
     control_logger = 'stop'
 
     # Track the state of keys for better control responsiveness instead of events
@@ -45,41 +43,42 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled):
 
     if keys[pygame.K_w]:
         if keys[pygame.K_a]:
-            m1.forward(50)
-            m2.forward(100)
+            m1.forward(halfspeed)
+            m2.forward(speed)
             control_logger = "leftTurn"
         elif keys[pygame.K_d]:
-            m1.forward(100)
-            m2.forward(50)
+            m1.forward(speed)
+            m2.forward(halfspeed)
             control_logger = "rightTurn"
         else:
-            motor_all.forward(100)
+            motor_all.forward(speed)
             control_logger = "accelerate"
 
     if keys[pygame.K_s]:
         if keys[pygame.K_a]:
-            m1.reverse(50)
-            m2.reverse(100)
+            m1.reverse(halfspeed)
+            m2.reverse(speed)
             control_logger = "reverseLeft"
         elif keys[pygame.K_d]:
-            m1.reverse(100)
-            m2.reverse(50)
+            m1.reverse(speed)
+            m2.reverse(halfspeed)
             control_logger = "reverseRight"
         else:
-            motor_all.reverse(100)
+            motor_all.reverse(speed)
             control_logger = "reverse"
 
     if keys[pygame.K_q]:
-        m1.forward(50)
-        m2.reverse(50)
+        m1.reverse(70)
+        m2.forward(70)
         control_logger = "leftInPlaceTurn"
 
     if keys[pygame.K_e]:
-        m1.reverse(50)
-        m2.forward(50)
+        m1.forward(70)
+        m2.reverse(70)
         control_logger = "rightInPlaceTurn"
 
-    if not any([keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d]]):
+    if not any([keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_q],
+                keys[pygame.K_e]]):
         motor_all.stop()
 
     if keys[pygame.K_c]:
@@ -92,15 +91,17 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled):
 
     if keys[pygame.K_ESCAPE]:
         pygame.quit()
+        camera.stop_preview()
         sys.exit()
 
     return control_logger, capture_enabled, manual_mode
 
 
-def self_driving_mode_control(model, img, motor_all, m1, m2, manual_mode):
+def self_driving_mode_control(model, img, motor_all, m1, m2, manual_mode, camera):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
+            camera.stop_preview()
             sys.exit()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_m:
@@ -145,14 +146,13 @@ def run_controller(screen, camera, model):
     capture_enabled = False
 
     while True:
+        screen.fill((0, 0, 0))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+                camera.stop_preview()
                 sys.exit()
-
-        array = camera.capture_array()
-        img = pygame.image.frombuffer(array.data, resolution, 'RGB')
-        screen.blit(img, (0, 0))
 
         # Display current mode and instructions
         mode_text = "Manual Mode" if manual_mode else "Self-Driving Mode"
@@ -168,14 +168,14 @@ def run_controller(screen, camera, model):
 
         if manual_mode:
             control_logger, capture_enabled, manual_mode = manual_mode_control(motor_all, m1, m2, manual_mode,
-                                                                               capture_enabled)
+                                                                               capture_enabled, camera)
             if capture_enabled:
                 # Create file path with correct dir name, add current time as unique identification
                 # and add additional associated data
                 filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
                 camera.capture_file(filename)
         else:
-            manual_mode = self_driving_mode_control(model, array, motor_all, m1, m2, manual_mode)
+            manual_mode = self_driving_mode_control(model, motor_all, m1, m2, manual_mode, camera)
 
         clock.tick(10)
         pygame.display.flip()
@@ -183,7 +183,7 @@ def run_controller(screen, camera, model):
 
 def main():
     model = tf.saved_model.load('path/to/saved/model')
-    screen, camera, config_preview, config_still = initialize_screen()
+    screen, camera = initialize_screen()
     run_controller(screen, camera, model)
 
 
