@@ -7,8 +7,9 @@ import PiMotor
 import tensorflow as tf
 
 resolution = (640, 480)
-speed = 60
-halfspeed = 30
+speed = 70
+halfspeed = 35
+framerate = 25
 
 
 def initialize_screen():
@@ -19,12 +20,12 @@ def initialize_screen():
     camera = Picamera2()
 
     # Still configuration
-    config_still = camera.create_still_configuration(main={"size": camera.sensor_resolution},
+    config_still = camera.create_still_configuration(main={"size": resolution},
                                                      lores={"size": (640, 480)},
                                                      display="lores")
     camera.configure(config_still)
 
-    camera.start_preview(Preview.QTGL)
+    # camera.start_preview(Preview.QTGL)
     camera.start()
 
     return screen, camera
@@ -77,8 +78,7 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled, camera)
         m2.reverse(70)
         control_logger = "rightInPlaceTurn"
 
-    if not any([keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_a], keys[pygame.K_d], keys[pygame.K_q],
-                keys[pygame.K_e]]):
+    if not any([keys[pygame.K_w], keys[pygame.K_s], keys[pygame.K_q], keys[pygame.K_e]]):
         motor_all.stop()
 
     if keys[pygame.K_c]:
@@ -146,7 +146,11 @@ def run_controller(screen, camera, model):
     capture_enabled = False
 
     while True:
-        screen.fill((0, 0, 0))
+        # screen.fill((0, 0, 0))
+
+        array = camera.capture_array()
+        img = pygame.image.frombuffer(array.data, resolution, 'RGB')
+        screen.blit(img, (0, 0))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -177,7 +181,7 @@ def run_controller(screen, camera, model):
         else:
             manual_mode = self_driving_mode_control(model, motor_all, m1, m2, manual_mode, camera)
 
-        clock.tick(10)
+        clock.tick(framerate)
         pygame.display.flip()
 
 
