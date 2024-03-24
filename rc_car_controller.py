@@ -5,6 +5,7 @@ from picamera2 import Picamera2, Preview
 import sys
 import PiMotor
 import tensorflow as tf
+import numpy as np
 
 resolution = (640, 480)
 speed = 70
@@ -96,7 +97,16 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled, camera)
     return control_logger, capture_enabled, manual_mode
 
 
-def self_driving_mode_control(model, img, motor_all, m1, m2, manual_mode, camera):
+def drive_predict(model, img):
+    img = img.resize((224, 224))  # Resize to match the input size expected by your model
+    img = np.array(img) / 255.0  # Normalize pixel values to [0, 1]
+    img = np.expand_dims(img, axis=0)  # Add batch dimension
+
+    predictions = model(img)
+    return np.argmax(predictions[0])
+
+
+def self_driving_mode_control(model, motor_all, m1, m2, manual_mode, camera, array):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -108,26 +118,28 @@ def self_driving_mode_control(model, img, motor_all, m1, m2, manual_mode, camera
                 print("Manual Mode" if manual_mode else "Self-Driving Mode")
                 return manual_mode
         else:
-            direction = model(img)
+            direction = drive_predict(model, array)
 
-            if direction == "accelerate":
+            if direction == 0:
                 motor_all.forward(speed)
-            elif direction == "reverse":
-                motor_all.reverse(speed)
-            elif direction == "leftTurn":
+            elif direction == 1:
                 m1.forward(speed/2)
                 m2.forward(speed)
-            elif direction == "rightTurn":
+            elif direction == 2:
                 m1.forward(speed)
                 m2.forward(speed/2)
+            else:
+                motor_all.stop()
+            """
+            elif direction == "reverse":
+                motor_all.reverse(speed)
             elif direction == "leftInPlaceTurn":
                 m1.forward(70)
                 m2.reverse(70)
             elif direction == "rightInPlaceTurn":
                 m1.reverse(70)
                 m2.forward(70)
-            else:
-                motor_all.stop()
+            """
 
 
 def run_controller(screen, camera, model):
@@ -178,7 +190,7 @@ def run_controller(screen, camera, model):
                 filename = os.path.join(image_dir, f"image_{str(time.time())}_{control_logger}.jpg")
                 camera.capture_file(filename)
         else:
-            manual_mode = self_driving_mode_control(model, motor_all, m1, m2, manual_mode, camera)
+            manual_mode = self_driving_mode_control(model, motor_all, m1, m2, manual_mode, camera, array)
 
         clock.tick(framerate)
         pygame.display.flip()
