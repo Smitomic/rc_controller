@@ -8,7 +8,6 @@ import tensorflow as tf
 
 resolution = (640, 480)
 speed = 70
-halfspeed = 35
 framerate = 25
 
 
@@ -44,12 +43,12 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled, camera)
 
     if keys[pygame.K_w]:
         if keys[pygame.K_a]:
-            m1.forward(halfspeed)
+            m1.forward(speed/2)
             m2.forward(speed)
             control_logger = "leftTurn"
         elif keys[pygame.K_d]:
             m1.forward(speed)
-            m2.forward(halfspeed)
+            m2.forward(speed/2)
             control_logger = "rightTurn"
         else:
             motor_all.forward(speed)
@@ -57,12 +56,12 @@ def manual_mode_control(motor_all, m1, m2, manual_mode, capture_enabled, camera)
 
     if keys[pygame.K_s]:
         if keys[pygame.K_a]:
-            m1.reverse(halfspeed)
+            m1.reverse(speed/2)
             m2.reverse(speed)
             control_logger = "reverseLeft"
         elif keys[pygame.K_d]:
             m1.reverse(speed)
-            m2.reverse(halfspeed)
+            m2.reverse(speed/2)
             control_logger = "reverseRight"
         else:
             motor_all.reverse(speed)
@@ -112,21 +111,21 @@ def self_driving_mode_control(model, img, motor_all, m1, m2, manual_mode, camera
             direction = model(img)
 
             if direction == "accelerate":
-                motor_all.forward(100)
+                motor_all.forward(speed)
             elif direction == "reverse":
-                motor_all.reverse(100)
+                motor_all.reverse(speed)
             elif direction == "leftTurn":
-                m1.forward(50)
-                m2.forward(100)
+                m1.forward(speed/2)
+                m2.forward(speed)
             elif direction == "rightTurn":
-                m1.forward(100)
-                m2.forward(50)
+                m1.forward(speed)
+                m2.forward(speed/2)
             elif direction == "leftInPlaceTurn":
-                m1.forward(50)
-                m2.reverse(50)
+                m1.forward(70)
+                m2.reverse(70)
             elif direction == "rightInPlaceTurn":
-                m1.reverse(50)
-                m2.forward(50)
+                m1.reverse(70)
+                m2.forward(70)
             else:
                 motor_all.stop()
 
@@ -186,7 +185,7 @@ def run_controller(screen, camera, model):
 
 
 def main():
-    model = tf.saved_model.load('path/to/saved/model')
+    model = tf.saved_model.load('trained_models/model_v1.keras')
     screen, camera = initialize_screen()
     run_controller(screen, camera, model)
 
