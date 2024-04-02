@@ -197,7 +197,7 @@ def run_controller(screen, camera, model):
 
 
 def main():
-    model = tf.saved_model.load('trained_models/model_v1.keras')
+    model = tf.keras.models.load_model('trained_models/model_v1.keras')
     screen, camera = initialize_screen()
     run_controller(screen, camera, model)
 
