@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 
 resolution = (640, 480)
-speed = 70
+speed = 50
 framerate = 25
 
 
@@ -123,7 +123,7 @@ def run_controller(screen, camera, model):
         capture_text = "Capture Enabled" if capture_enabled else "Capture Disabled"
         render_text(screen, font, capture_text, (10, 10))
 
-        instructions_text = "Press 'M' to switch mode | Press 'C' to toggle capture"
+        instructions_text = "Press 'C' to toggle capture"
         render_text(screen, font, instructions_text, (10, resolution[1] - 70))
 
         pygame.display.update()
