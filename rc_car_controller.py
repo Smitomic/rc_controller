@@ -4,8 +4,6 @@ import pygame
 from picamera2 import Picamera2, Preview
 import sys
 import PiMotor
-import tensorflow as tf
-import numpy as np
 
 resolution = (640, 480)
 speed = 50
@@ -94,7 +92,7 @@ def manual_mode_control(motor_all, m1, m2, capture_enabled, camera):
     return control_logger, capture_enabled
 
 
-def run_controller(screen, camera, model):
+def run_controller(screen, camera):
     m1 = PiMotor.Motor("MOTOR1", 1)
     m2 = PiMotor.Motor("MOTOR2", 1)
     motor_all = PiMotor.LinkedMotors(m1, m2)
@@ -140,9 +138,8 @@ def run_controller(screen, camera, model):
 
 
 def main():
-    model = tf.keras.models.load_model('trained_models/model_v1.keras')
     screen, camera = initialize_screen()
-    run_controller(screen, camera, model)
+    run_controller(screen, camera)
 
 
 if __name__ == '__main__':
