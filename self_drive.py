@@ -18,7 +18,7 @@ def predict_direction(model, array):
 
 
 def main():
-    model = tf.keras.models.load_model('trained_models/model_v2.keras')
+    model = tf.keras.models.load_model('trained_models/model_v6.keras')
 
     camera = Picamera2()
 
