@@ -12,7 +12,6 @@ This repository contains all the code and documentation for the self-driving RC 
 ![Lane Following on Track 2](/showcase_media/track2-lane_detection.gif)
 
 ### Obstacle Avoidance
-Watch how the car smartly detects and navigates around obstacles placed in its path.
 ![Obstacle Avoidance](/showcase_media/track1-obstacle_stopping_feature.gif)
 
 ### Traffic Sign Recognition
