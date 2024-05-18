@@ -21,6 +21,8 @@ This repository contains all the code and documentation for the self-driving RC 
 #### Right Turn Recognition
 ![Traffic Sign Recognition - Right Turn](/showcase_media/track3-right_turn.gif)
 
+Directory showcase_media contains videos of which these gifs have been created as well as other versions of models that haven't been as successful.
+
 ## Code Structure
 
 The project is organized into several directories to maintain a clear and manageable source code arrangement:
