@@ -29,7 +29,7 @@ The project is organized into several directories to maintain a clear and manage
 
 - **`captured_images/`**: Stores the image data used in training the model.
 - **`notebooks/`**: Contains Jupyter notebooks that detail the training and evaluation of the models.
-- **`showcase_videos/`**: Archives videos showing the models in action.
+- **`showcase_media/`**: Archives videos showing the models in action.
 - **`trained_models/`**: Houses the serialized models ready for deployment.
 
 ### Key Scripts
