@@ -45,8 +45,10 @@ To run `rc_car_controller.py`, ensure your Raspberry Pi is set up with the neces
 ```bash
 pip install picamera2 pygame
 python rc_car_controller.py
+```
 
 For self_drive.py, install TensorFlow 2.16.1 and numpy:
 ```bash
 pip install tensorflow==2.16.1 numpy
 python self_drive.py
+```
